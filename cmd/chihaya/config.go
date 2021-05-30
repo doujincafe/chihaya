@@ -13,7 +13,6 @@ import (
 
 	// Imports to register middleware drivers.
 	_ "github.com/doujincafe/chihaya/middleware/clientapproval"
-	_ "github.com/doujincafe/chihaya/middleware/jwt"
 	_ "github.com/doujincafe/chihaya/middleware/torrentapproval"
 	_ "github.com/doujincafe/chihaya/middleware/varinterval"
 
