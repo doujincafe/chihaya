@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/chihaya/chihaya/bittorrent"
+	"github.com/doujincafe/chihaya/bittorrent"
 )
 
 var cases = []struct {

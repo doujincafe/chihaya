@@ -12,13 +12,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/chihaya/chihaya/frontend/http"
-	"github.com/chihaya/chihaya/frontend/udp"
-	"github.com/chihaya/chihaya/middleware"
-	"github.com/chihaya/chihaya/pkg/log"
-	"github.com/chihaya/chihaya/pkg/metrics"
-	"github.com/chihaya/chihaya/pkg/stop"
-	"github.com/chihaya/chihaya/storage"
+	"github.com/doujincafe/chihaya/frontend/http"
+	"github.com/doujincafe/chihaya/frontend/udp"
+	"github.com/doujincafe/chihaya/middleware"
+	"github.com/doujincafe/chihaya/pkg/log"
+	"github.com/doujincafe/chihaya/pkg/metrics"
+	"github.com/doujincafe/chihaya/pkg/stop"
+	"github.com/doujincafe/chihaya/storage"
 )
 
 // Run represents the state of a running instance of Chihaya.

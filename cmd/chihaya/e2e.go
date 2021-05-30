@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/chihaya/chihaya/bittorrent"
-	"github.com/chihaya/chihaya/pkg/log"
+	"github.com/doujincafe/chihaya/bittorrent"
+	"github.com/doujincafe/chihaya/pkg/log"
 )
 
 // EndToEndRunCmdFunc implements a Cobra command that runs the end-to-end test

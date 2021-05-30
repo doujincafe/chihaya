@@ -33,11 +33,11 @@ import (
 	"github.com/gomodule/redigo/redis"
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/chihaya/chihaya/bittorrent"
-	"github.com/chihaya/chihaya/pkg/log"
-	"github.com/chihaya/chihaya/pkg/stop"
-	"github.com/chihaya/chihaya/pkg/timecache"
-	"github.com/chihaya/chihaya/storage"
+	"github.com/doujincafe/chihaya/bittorrent"
+	"github.com/doujincafe/chihaya/pkg/log"
+	"github.com/doujincafe/chihaya/pkg/stop"
+	"github.com/doujincafe/chihaya/pkg/timecache"
+	"github.com/doujincafe/chihaya/storage"
 )
 
 // Name is the name by which this peer store is registered with Chihaya.

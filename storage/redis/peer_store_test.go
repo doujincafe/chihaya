@@ -7,7 +7,7 @@ import (
 
 	"github.com/alicebob/miniredis"
 
-	s "github.com/chihaya/chihaya/storage"
+	s "github.com/doujincafe/chihaya/storage"
 )
 
 func createNew() s.PeerStore {

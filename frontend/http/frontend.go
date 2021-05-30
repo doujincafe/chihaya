@@ -12,10 +12,10 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/chihaya/chihaya/bittorrent"
-	"github.com/chihaya/chihaya/frontend"
-	"github.com/chihaya/chihaya/pkg/log"
-	"github.com/chihaya/chihaya/pkg/stop"
+	"github.com/doujincafe/chihaya/bittorrent"
+	"github.com/doujincafe/chihaya/frontend"
+	"github.com/doujincafe/chihaya/pkg/log"
+	"github.com/doujincafe/chihaya/pkg/stop"
 )
 
 // Config represents all of the configurable options for an HTTP BitTorrent

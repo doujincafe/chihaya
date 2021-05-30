@@ -8,7 +8,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/chihaya/chihaya/pkg/log"
+	"github.com/doujincafe/chihaya/pkg/log"
 )
 
 // PeerID represents a peer ID.

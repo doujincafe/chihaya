@@ -3,9 +3,9 @@ package http
 import (
 	"net/http"
 
-	"github.com/chihaya/chihaya/bittorrent"
-	"github.com/chihaya/chihaya/frontend/http/bencode"
-	"github.com/chihaya/chihaya/pkg/log"
+	"github.com/doujincafe/chihaya/bittorrent"
+	"github.com/doujincafe/chihaya/frontend/http/bencode"
+	"github.com/doujincafe/chihaya/pkg/log"
 )
 
 // WriteError communicates an error to a BitTorrent client over HTTP.

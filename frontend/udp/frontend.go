@@ -12,12 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chihaya/chihaya/bittorrent"
-	"github.com/chihaya/chihaya/frontend"
-	"github.com/chihaya/chihaya/frontend/udp/bytepool"
-	"github.com/chihaya/chihaya/pkg/log"
-	"github.com/chihaya/chihaya/pkg/stop"
-	"github.com/chihaya/chihaya/pkg/timecache"
+	"github.com/doujincafe/chihaya/bittorrent"
+	"github.com/doujincafe/chihaya/frontend"
+	"github.com/doujincafe/chihaya/frontend/udp/bytepool"
+	"github.com/doujincafe/chihaya/pkg/log"
+	"github.com/doujincafe/chihaya/pkg/stop"
+	"github.com/doujincafe/chihaya/pkg/timecache"
 )
 
 var allowedGeneratedPrivateKeyRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
