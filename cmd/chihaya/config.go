@@ -19,7 +19,6 @@ import (
 
 	// Imports to register storage drivers.
 	_ "github.com/doujincafe/chihaya/storage/memory"
-	_ "github.com/doujincafe/chihaya/storage/redis"
 )
 
 type storageConfig struct {
