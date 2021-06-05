@@ -14,7 +14,7 @@ import (
     "github.com/doujincafe/chihaya/middleware"
 )
 
-const Name = "nanami is cutest"
+const Name = "cutenanami"
 
 func init() {
     middleware.RegisterDriver(Name, driver{})
