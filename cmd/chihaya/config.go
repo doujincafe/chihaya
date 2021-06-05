@@ -15,6 +15,7 @@ import (
 	_ "github.com/doujincafe/chihaya/middleware/clientapproval"
 	_ "github.com/doujincafe/chihaya/middleware/torrentapproval"
 	_ "github.com/doujincafe/chihaya/middleware/varinterval"
+	_ "github.com/doujincafe/chihaya/middleware/cutenanami"
 
 	// Imports to register storage drivers.
 	_ "github.com/doujincafe/chihaya/storage/memory"
