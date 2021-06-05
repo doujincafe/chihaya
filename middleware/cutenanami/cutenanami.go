@@ -6,7 +6,6 @@ package cutenanami
 
 import (
     "context"
-    "encoding/hex"
     "fmt"
 
     yaml "gopkg.in/yaml.v2"
@@ -15,7 +14,6 @@ import (
     "github.com/doujincafe/chihaya/middleware"
 )
 
-// Name is the name by which this middleware is registered with Chihaya.
 const Name = "nanami is cutest"
 
 func init() {
@@ -36,27 +34,24 @@ func (d driver) NewHook(optionBytes []byte) (middleware.Hook, error) {
     return NewHook(cfg)
 }
 
-// ErrTorrentUnapproved is the error returned when a torrent hash is invalid.
 var ErrTorrentUnapproved = bittorrent.ClientError("unapproved torrent")
 var ErrClientUnapproved = bittorrent.ClientError("unapproved client")
 var ErrUserUnapproved = bittorrent.ClientError("unapproved user")
 
-// Config for middleware. Address of nanami endpoint
 type Config struct {
     NanamiAddress string `yaml:"nanami_address"`
 }
 
 type hook struct {
     approvedTorrents   map[bittorrent.InfoHash]struct{}
-    approvedClients    map[bittorrent.ClientId]struct{}
+    approvedClients    map[bittorrent.ClientID]struct{}
     approvedUsers      map[string]struct{}
 }
 
-// NewHook returns an instance of the torrent approval middleware.
 func NewHook(cfg Config) (middleware.Hook, error) {
     h := &hook{
         approvedTorrents:   make(map[bittorrent.InfoHash]struct{}),
-        approvedClients:    make(map[bittorrent.ClientId]struct{}),
+        approvedClients:    make(map[bittorrent.ClientID]struct{}),
         approvedUsers:      make(map[string]struct{}),
     }
 
@@ -67,13 +62,19 @@ func NewHook(cfg Config) (middleware.Hook, error) {
     return h, nil
 }
 
+
+func ParseUserIdFromAnnounceUrl(announceUrl string) (string) {
+    // TODO
+    return "Hello world"
+}
+
 func (h *hook) HandleAnnounce(ctx context.Context, req *bittorrent.AnnounceRequest, resp *bittorrent.AnnounceResponse) (context.Context, error) {
     infohash := req.InfoHash
     clientId := bittorrent.NewClientID(req.Peer.ID)
     userId := ParseUserIdFromAnnounceUrl(req.Params.RawQuery())
 
     if _, found := h.approvedUsers[userId]; !found {
-        return ctr, ErrUserUnapproved
+        return ctx, ErrUserUnapproved
     }
 
     if _, found := h.approvedTorrents[infohash]; !found {
@@ -92,7 +93,3 @@ func (h *hook) HandleScrape(ctx context.Context, req *bittorrent.ScrapeRequest, 
     return ctx, nil
 }
 
-func (h *hook) ParseUserIdFromAnnounceUrl(string announceUrl) (string) {
-    // TODO
-    return "Hello world"
-}
