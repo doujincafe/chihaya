@@ -8,6 +8,7 @@ package cutenanami
 import (
 	"context"
 	"fmt"
+	"os"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -44,29 +45,30 @@ type Config struct {
 }
 
 type hook struct {
-	approvedTorrents   map[bittorrent.InfoHash]struct{}
-	approvedClients    map[bittorrent.ClientID]struct{}
-	approvedUsers      map[string]struct{}
-	communication      INanamiCommunication
+	approvedTorrents map[bittorrent.InfoHash]struct{}
+	approvedClients  map[bittorrent.ClientID]struct{}
+	approvedUsers    map[string]struct{}
+	communication    NanamiCommunication
 }
 
 func NewHook(cfg Config) (middleware.Hook, error) {
 	h := &hook{
-		approvedTorrents:   make(map[bittorrent.InfoHash]struct{}),
-		approvedClients:    make(map[bittorrent.ClientID]struct{}),
-		approvedUsers:      make(map[string]struct{}),
-		communication:      NanamiCommunication{cfg},
+		approvedTorrents: make(map[bittorrent.InfoHash]struct{}),
+		approvedClients:  make(map[bittorrent.ClientID]struct{}),
+		approvedUsers:    make(map[string]struct{}),
+		communication:    NewNanamiCommunication(cfg),
 	}
 
-	if (len(cfg.NanamiAddress) <= 0) {
+	if len(cfg.NanamiAddress) <= 0 {
 		return nil, fmt.Errorf("nanami address not configured")
 	}
+
+	go h.UpdateApprovals()
 
 	return h, nil
 }
 
-
-func ParseUserIdFromAnnounceUrl(announceUrl string) (string) {
+func ParseUserIdFromAnnounceUrl(announceUrl string) string {
 	// TODO
 	return "Hello world"
 }
@@ -76,12 +78,8 @@ func (h *hook) HandleAnnounce(ctx context.Context, req *bittorrent.AnnounceReque
 	clientId := bittorrent.NewClientID(req.Peer.ID)
 	userId := ParseUserIdFromAnnounceUrl(req.Params.RawQuery())
 
-	if err != nil {
-		return ctx, ErrTorrentUnapproved
-	}
-
 	if _, found := h.approvedUsers[userId]; !found {
-		return ctx, ErrUserUnapproved
+		//		return ctx, ErrUserUnapproved
 	}
 
 	if _, found := h.approvedTorrents[infohash]; !found {
@@ -100,3 +98,39 @@ func (h *hook) HandleScrape(ctx context.Context, req *bittorrent.ScrapeRequest, 
 	return ctx, nil
 }
 
+func (h *hook) UpdateApprovals() {
+	for {
+
+		pair := <-h.communication.approvalChannel
+		if pair.err == nil {
+			// Approved torrents
+			approvedTorrents := make(map[bittorrent.InfoHash]struct{})
+			for _, str := range pair.info.ApprovedTorrents {
+				if len(str) == 20 {
+					infoHash := bittorrent.InfoHashFromString(str)
+					approvedTorrents[infoHash] = struct{}{}
+				} else {
+					fmt.Println("Invalid format for whitelisted torrent: " + str)
+				}
+
+			}
+
+			// Approved torrentClients
+			approvedClients := make(map[bittorrent.ClientID]struct{})
+			for _, str := range pair.info.ApprovedClients {
+				var clientID bittorrent.ClientID
+				copy(clientID[:], []byte(str))
+				approvedClients[clientID] = struct{}{}
+			}
+
+			// Approved users
+			// TODO
+
+			// Swap reference
+			h.approvedTorrents = approvedTorrents
+			h.approvedClients = approvedClients
+		} else {
+			fmt.Fprintln(os.Stdout, "Did not update approvals because of error: ", pair.err)
+		}
+	}
+}

@@ -1,31 +1,29 @@
 package cutenanami
 
 import (
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
 )
 
 type ApprovalInfo struct {
-	approvedTorrents []string
-	approvedClients  []string
-	approvedUsers    []string
-}
-
-type INanamiCommunication interface {
-	RequestApprovalInformation()(approvalInfo *ApprovalInfo, err error)
+	ApprovedTorrents []string
+	ApprovedClients  []string
+	ApprovedUsers    []string
 }
 
 type NanamiCommunication struct {
-	config Config
+	config          Config
+	approvalChannel chan PeriodicUpdateResult
 }
 
-func New(config Config) NanamiCommunication {
-	communication := NanamiCommunication{config}
-	return communication;
+type PeriodicUpdateResult struct {
+	info *ApprovalInfo
+	err  error
 }
 
-func (c NanamiCommunication) RequestApprovalInformation()(approvalInfo *ApprovalInfo, err error) {
+func (c NanamiCommunication) RequestApprovalInformation() (approvalInfo *ApprovalInfo, err error) {
 
 	// Perform GET to nanami
 	resp, err := http.Get(c.config.NanamiAddress + "approval")
@@ -45,4 +43,31 @@ func (c NanamiCommunication) RequestApprovalInformation()(approvalInfo *Approval
 
 	// All good
 	return &parsedInfo, nil
+}
+
+func (c NanamiCommunication) GetPeriodicUpdate() {
+	for {
+		approvalInfo, err := c.RequestApprovalInformation()
+		c.approvalChannel <- PeriodicUpdateResult{approvalInfo, err}
+		time.Sleep(time.Second)
+	}
+}
+
+func NewNanamiCommunication(config Config) NanamiCommunication {
+	communication := NanamiCommunication{config, make(chan PeriodicUpdateResult)}
+	go communication.GetPeriodicUpdate()
+	return communication
+}
+
+func PrintApprovalInfo(info *ApprovalInfo) {
+	// Print contents
+	fmt.Println("Allowed torrents")
+	for _, id := range info.ApprovedTorrents {
+		fmt.Println(id)
+	}
+
+	fmt.Println("Allowed clients")
+	for _, id := range info.ApprovedClients {
+		fmt.Println(id)
+	}
 }
