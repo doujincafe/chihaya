@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -63,7 +64,8 @@ func NewHook(cfg Config) (middleware.Hook, error) {
 		return nil, fmt.Errorf("nanami address not configured")
 	}
 
-	go h.UpdateApprovals()
+	// Start background updater
+	go StartApprovalUpdater(h)
 
 	return h, nil
 }
@@ -98,39 +100,46 @@ func (h *hook) HandleScrape(ctx context.Context, req *bittorrent.ScrapeRequest, 
 	return ctx, nil
 }
 
+func StartApprovalUpdater(h *hook) {
+	// Update now
+	h.UpdateApprovals()
+
+	// Then update periodically in background
+	ticker := time.NewTicker(5 * time.Minute)
+	for range ticker.C {
+		h.UpdateApprovals()
+	}
+}
+
 func (h *hook) UpdateApprovals() {
-	for {
-
-		pair := <-h.communication.approvalChannel
-		if pair.err == nil {
-			// Approved torrents
-			approvedTorrents := make(map[bittorrent.InfoHash]struct{})
-			for _, str := range pair.info.ApprovedTorrents {
-				if len(str) == 20 {
-					infoHash := bittorrent.InfoHashFromString(str)
-					approvedTorrents[infoHash] = struct{}{}
-				} else {
-					fmt.Println("Invalid format for whitelisted torrent: " + str)
-				}
-
+	pair := <-h.communication.approvalChannel
+	if pair.err == nil {
+		// Approved torrents
+		approvedTorrents := make(map[bittorrent.InfoHash]struct{})
+		for _, str := range pair.info.ApprovedTorrents {
+			if len(str) == 20 {
+				infoHash := bittorrent.InfoHashFromString(str)
+				approvedTorrents[infoHash] = struct{}{}
+			} else {
+				fmt.Println("Invalid format for whitelisted torrent: " + str)
 			}
-
-			// Approved torrentClients
-			approvedClients := make(map[bittorrent.ClientID]struct{})
-			for _, str := range pair.info.ApprovedClients {
-				var clientID bittorrent.ClientID
-				copy(clientID[:], []byte(str))
-				approvedClients[clientID] = struct{}{}
-			}
-
-			// Approved users
-			// TODO
-
-			// Swap reference
-			h.approvedTorrents = approvedTorrents
-			h.approvedClients = approvedClients
-		} else {
-			fmt.Fprintln(os.Stdout, "Did not update approvals because of error: ", pair.err)
 		}
+
+		// Approved torrentClients
+		approvedClients := make(map[bittorrent.ClientID]struct{})
+		for _, str := range pair.info.ApprovedClients {
+			var clientID bittorrent.ClientID
+			copy(clientID[:], []byte(str))
+			approvedClients[clientID] = struct{}{}
+		}
+
+		// Approved users
+		// TODO
+
+		// Swap reference
+		h.approvedTorrents = approvedTorrents
+		h.approvedClients = approvedClients
+	} else {
+		fmt.Fprintln(os.Stdout, "Did not update approvals because of error: ", pair.err)
 	}
 }
