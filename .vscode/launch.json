@@ -8,8 +8,10 @@
             "name": "Launch Package",
             "type": "go",
             "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd/chihaya",
+            "showLog": true,
+            "args": ["--config", "${workspaceFolder}/nanami-config.yaml"]
         }
     ]
 }
