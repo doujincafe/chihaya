@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -18,6 +19,7 @@ import (
 )
 
 const Name = "cutenanami"
+const User_id_param_name = "user_id"
 
 func init() {
 	middleware.RegisterDriver(Name, driver{})
@@ -70,18 +72,24 @@ func NewHook(cfg Config) (middleware.Hook, error) {
 	return h, nil
 }
 
-func ParseUserIdFromAnnounceUrl(announceUrl string) string {
-	// TODO
-	return "Hello world"
+func ParseUserIdFromURI(uri string) (result string) {
+	split := strings.Split(uri, "/")
+	if len(split) == 3 {
+		result = split[2]
+	} else {
+		result = ""
+	}
+
+	return result
 }
 
 func (h *hook) HandleAnnounce(ctx context.Context, req *bittorrent.AnnounceRequest, resp *bittorrent.AnnounceResponse) (context.Context, error) {
 	infohash := req.InfoHash
 	clientId := bittorrent.NewClientID(req.Peer.ID)
-	userId := ParseUserIdFromAnnounceUrl(req.Params.RawQuery())
+	userId := ParseUserIdFromURI(req.Params.RawPath())
 
 	if _, found := h.approvedUsers[userId]; !found {
-		//		return ctx, ErrUserUnapproved
+		return ctx, ErrUserUnapproved
 	}
 
 	if _, found := h.approvedTorrents[infohash]; !found {
@@ -134,11 +142,15 @@ func (h *hook) UpdateApprovals() {
 		}
 
 		// Approved users
-		// TODO
+		approvedUsers := make(map[string]struct{})
+		for _, str := range pair.info.ApprovedUsers {
+			approvedUsers[str] = struct{}{}
+		}
 
 		// Swap reference
 		h.approvedTorrents = approvedTorrents
 		h.approvedClients = approvedClients
+		h.approvedUsers = approvedUsers
 	} else {
 		fmt.Fprintln(os.Stdout, "Did not update approvals because of error: ", pair.err)
 	}

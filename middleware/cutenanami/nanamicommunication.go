@@ -70,4 +70,9 @@ func PrintApprovalInfo(info *ApprovalInfo) {
 	for _, id := range info.ApprovedClients {
 		fmt.Println(id)
 	}
+
+	fmt.Println("Allowed users")
+	for _, id := range info.ApprovedUsers {
+		fmt.Println(id)
+	}
 }
