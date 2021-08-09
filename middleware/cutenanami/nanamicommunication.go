@@ -8,9 +8,9 @@ import (
 )
 
 type ApprovalInfo struct {
-	ApprovedTorrents []string
-	ApprovedClients  []string
-	ApprovedUsers    []string
+	ApprovedTorrents []string `json:"approved_torrents"`
+	ApprovedClients  []string `json:"approved_clients"`
+	ApprovedUsers    []string `json:"approved_users"`
 }
 
 type NanamiCommunication struct {
