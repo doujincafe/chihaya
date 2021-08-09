@@ -1,12 +1,17 @@
 package cutenanami
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
+	"os"
 )
 
+const Buffer_size = 1000
+const Batch_size = 1
+
+// Approval info related
 type ApprovalInfo struct {
 	ApprovedTorrents []string `json:"approved_torrents"`
 	ApprovedClients  []string `json:"approved_clients"`
@@ -14,11 +19,12 @@ type ApprovalInfo struct {
 }
 
 type NanamiCommunication struct {
-	config          Config
-	approvalChannel chan PeriodicUpdateResult
+	config                  Config
+	approvalChannelOutbound chan PeriodicApprovalUpdateResult
+	announceChannelInbound  chan SingleUserAnnounce
 }
 
-type PeriodicUpdateResult struct {
+type PeriodicApprovalUpdateResult struct {
 	info *ApprovalInfo
 	err  error
 }
@@ -45,17 +51,17 @@ func (c NanamiCommunication) RequestApprovalInformation() (approvalInfo *Approva
 	return &parsedInfo, nil
 }
 
-func (c NanamiCommunication) GetPeriodicUpdate() {
+func (c NanamiCommunication) HandlePeriodicApprovalUpdate() {
 	for {
 		approvalInfo, err := c.RequestApprovalInformation()
-		c.approvalChannel <- PeriodicUpdateResult{approvalInfo, err}
-		time.Sleep(time.Second)
+		c.approvalChannelOutbound <- PeriodicApprovalUpdateResult{approvalInfo, err}
 	}
 }
 
 func NewNanamiCommunication(config Config) NanamiCommunication {
-	communication := NanamiCommunication{config, make(chan PeriodicUpdateResult)}
-	go communication.GetPeriodicUpdate()
+	communication := NanamiCommunication{config, make(chan PeriodicApprovalUpdateResult), make(chan SingleUserAnnounce, Buffer_size)}
+	go communication.HandlePeriodicApprovalUpdate()
+	go communication.HandleAnnounceBatch()
 	return communication
 }
 
@@ -74,5 +80,60 @@ func PrintApprovalInfo(info *ApprovalInfo) {
 	fmt.Println("Allowed users")
 	for _, id := range info.ApprovedUsers {
 		fmt.Println(id)
+	}
+}
+
+// Batched announces
+type SingleUserAnnounce struct {
+	UserToken  string `json:"user_token"`
+	Infohash   string `json:"infohash"`
+	Event      uint8  `json:"event"`
+	Downloaded uint64 `json:"downloaded"`
+	Uploaded   uint64 `json:"uploaded"`
+}
+
+func (c NanamiCommunication) PushAnnounceBatch(announceBatch [Batch_size]SingleUserAnnounce) (err error) {
+	// Serialize
+	res, err := json.Marshal(announceBatch)
+	if err != nil {
+		return err
+	}
+
+	// POST to nanami
+	resp, err := http.Post(
+		c.config.NanamiAddress+"announce_batch",
+		"application/json; charset=UTF-8",
+		bytes.NewBuffer(res))
+
+	fmt.Print(string(res))
+
+	// Check errors
+	if err != nil {
+		return err
+	}
+
+	// Close response
+	defer resp.Body.Close()
+
+	// All good
+	return nil
+}
+
+func (c NanamiCommunication) HandleAnnounceBatch() {
+	// Main loop
+	for {
+		// Work loop, construct data for sending
+		current_count := 0
+		var arr [Batch_size]SingleUserAnnounce
+		for current_count < Batch_size {
+			announce := <-c.announceChannelInbound
+			arr[current_count] = announce
+			current_count++
+		}
+
+		err := c.PushAnnounceBatch(arr)
+		if err != nil {
+			fmt.Fprintln(os.Stdout, "Did not push batch because of error: ", err)
+		}
 	}
 }

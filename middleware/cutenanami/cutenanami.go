@@ -49,7 +49,7 @@ type Config struct {
 
 type hook struct {
 	approvedTorrents map[bittorrent.InfoHash]struct{}
-	approvedClients  map[bittorrent.ClientID]struct{}
+	approvedClients  map[string]struct{}
 	approvedUsers    map[string]struct{}
 	communication    NanamiCommunication
 }
@@ -57,7 +57,7 @@ type hook struct {
 func NewHook(cfg Config) (middleware.Hook, error) {
 	h := &hook{
 		approvedTorrents: make(map[bittorrent.InfoHash]struct{}),
-		approvedClients:  make(map[bittorrent.ClientID]struct{}),
+		approvedClients:  make(map[string]struct{}),
 		approvedUsers:    make(map[string]struct{}),
 		communication:    NewNanamiCommunication(cfg),
 	}
@@ -85,7 +85,8 @@ func ParseUserIdFromURI(uri string) (result string) {
 
 func (h *hook) HandleAnnounce(ctx context.Context, req *bittorrent.AnnounceRequest, resp *bittorrent.AnnounceResponse) (context.Context, error) {
 	infohash := req.InfoHash
-	clientId := bittorrent.NewClientID(req.Peer.ID)
+	clientId := string(req.Peer.ID[:])
+	clientSoftwareId := clientId[0:8]
 	userId := ParseUserIdFromURI(req.Params.RawPath())
 
 	if _, found := h.approvedUsers[userId]; !found {
@@ -96,9 +97,19 @@ func (h *hook) HandleAnnounce(ctx context.Context, req *bittorrent.AnnounceReque
 		return ctx, ErrTorrentUnapproved
 	}
 
-	if _, found := h.approvedClients[clientId]; !found {
+	if _, found := h.approvedClients[clientSoftwareId]; !found {
 		return ctx, ErrClientUnapproved
 	}
+
+	info := SingleUserAnnounce{
+		UserToken:  userId,
+		Infohash:   string(clientId[:]),
+		Event:      uint8(req.Event),
+		Downloaded: req.Downloaded,
+		Uploaded:   req.Uploaded,
+	}
+
+	h.communication.announceChannelInbound <- info
 
 	return ctx, nil
 }
@@ -120,7 +131,7 @@ func StartApprovalUpdater(h *hook) {
 }
 
 func (h *hook) UpdateApprovals() {
-	pair := <-h.communication.approvalChannel
+	pair := <-h.communication.approvalChannelOutbound
 	if pair.err == nil {
 		// Approved torrents
 		approvedTorrents := make(map[bittorrent.InfoHash]struct{})
@@ -134,11 +145,9 @@ func (h *hook) UpdateApprovals() {
 		}
 
 		// Approved torrentClients
-		approvedClients := make(map[bittorrent.ClientID]struct{})
+		approvedClients := make(map[string]struct{})
 		for _, str := range pair.info.ApprovedClients {
-			var clientID bittorrent.ClientID
-			copy(clientID[:], []byte(str))
-			approvedClients[clientID] = struct{}{}
+			approvedClients[str] = struct{}{}
 		}
 
 		// Approved users
